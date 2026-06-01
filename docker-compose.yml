@@ -20,7 +20,9 @@ services:
       retries: 10
 
   backend:
-    build: ./api
+    build:
+      context: ./api
+      dockerfile: Dockerfile
     container_name: badminton-backend
     environment:
       SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/badminton_analysis?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
@@ -37,7 +39,9 @@ services:
     restart: unless-stopped
 
   frontend:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
     container_name: badminton-frontend
     ports:
       - "80:80"
