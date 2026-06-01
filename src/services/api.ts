@@ -1,6 +1,6 @@
 import { Video, Analysis, StatsData, UploadResponse, Action } from '../types';
 
-const API_BASE_URL = 'http://localhost:8080/api';
+const API_BASE_URL = 'http://localhost:18080/api';
 
 class ApiService {
   private async request<T>(
