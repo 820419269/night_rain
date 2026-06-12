@@ -21,9 +21,16 @@ FROM eclipse-temurin:17-jre-alpine
 
 WORKDIR /app
 
+# 安装 curl 用于健康检查
+RUN apk add --no-cache curl
+
 # 复制构建好的 jar 包
 COPY --from=builder /app/target/*.jar app.jar
 
+# 创建上传目录
+RUN mkdir -p /app/uploads/videos
+
 EXPOSE 8080
 
-ENTRYPOINT ["java", "-jar", "app.jar"]
+# 使用 exec form 避免信号处理问题
+ENTRYPOINT ["sh", "-c", "java -jar app.jar"]

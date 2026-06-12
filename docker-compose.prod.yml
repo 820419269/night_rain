@@ -1,0 +1,117 @@
+version: '3.8'
+
+services:
+  # MySQL 数据库服务
+  mysql:
+    image: mysql:8.0
+    container_name: badminton-mysql
+    env_file:
+      - .env.production
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./api/database/init.sql:/docker-entrypoint-initdb.d/init.sql
+      # MySQL 配置
+      - ./config/mysql.cnf:/etc/mysql/conf.d/custom.cnf:ro
+    ports:
+      - "3306:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: always
+    networks:
+      - badminton-network
+    # 生产资源限制
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 512M
+
+  # Spring Boot 后端服务
+  backend:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+      args:
+        - JAVA_OPTS=${JAVA_OPTS}
+    container_name: badminton-backend
+    env_file:
+      - .env.production
+    environment:
+      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL}
+      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
+      UPLOAD_PATH: ${UPLOAD_PATH}
+      JAVA_OPTS: ${JAVA_OPTS}
+    volumes:
+      - uploads:/app/uploads
+      # 上传文件持久化到宿主机
+      - ./uploads:/app/uploads:consistent
+    ports:
+      - "18080:8080"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    restart: always
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - badminton-network
+    deploy:
+      resources:
+        limits:
+          memory: 1.5G
+        reservations:
+          memory: 1G
+
+  # Nginx 前端服务
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: badminton-frontend
+    volumes:
+      # Nginx 日志
+      - ./logs/nginx:/var/log/nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: always
+    depends_on:
+      - backend
+    networks:
+      - badminton-network
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 128M
+
+networks:
+  badminton-network:
+    driver: bridge
+
+volumes:
+  mysql_data:
+    driver: local
+  uploads:
+    driver: local

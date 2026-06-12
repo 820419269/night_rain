@@ -21,9 +21,16 @@ RUN pnpm run build
 
 FROM nginx:alpine
 
+# 安装 curl 用于健康检查
+RUN apk add --no-cache curl
+
+# 复制构建产物
 COPY --from=builder /app/dist /usr/share/nginx/html
-COPY nginx.conf /etc/nginx/nginx.conf
+
+# 复制 Nginx 配置（使用生产优化配置）
+COPY config/nginx.conf /etc/nginx/nginx.conf
 
 EXPOSE 80
 
+# 使用 exec form
 CMD ["nginx", "-g", "daemon off;"]

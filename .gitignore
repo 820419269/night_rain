@@ -12,6 +12,19 @@ dist
 dist-ssr
 *.local
 
+# Environment files (contains secrets)
+.env
+.env.*
+!.env.production.example
+
+# Uploads
+uploads/*
+!uploads/.gitkeep
+
+# Docker
+.pnpm-store/
+.m2/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
